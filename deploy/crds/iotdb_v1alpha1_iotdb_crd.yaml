@@ -1,0 +1,75 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: iotdbs.iotdb.apache.org
+spec:
+  group: iotdb.apache.org
+  names:
+    kind: IoTDB
+    listKind: IoTDBList
+    plural: iotdbs
+    singular: iotdb
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            hostPath:
+              description: HostPath is the local path to store data
+              type: string
+            image:
+              description: Image is the image to use for the Pods.
+              type: string
+            imagePullPolicy:
+              description: ImagePullPolicy defines how the image is pulled.
+              type: string
+            size:
+              description: Size is the size of the IoTDB Statefulset
+              format: int64
+              type: integer
+            storageMode:
+              description: StorageMode can be EmptyDir, HostPath, NFS
+              type: string
+            volumeClaimTemplates:
+              description: VolumeClaimTemplates defines the StorageClass
+              items:
+                type: object
+              type: array
+          required:
+          - size
+          - image
+          - imagePullPolicy
+          - storageMode
+          - hostPath
+          - volumeClaimTemplates
+          type: object
+        status:
+          properties:
+            nodes:
+              description: Nodes are the names of the IoTDB pods
+              items:
+                type: string
+              type: array
+          required:
+          - nodes
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true

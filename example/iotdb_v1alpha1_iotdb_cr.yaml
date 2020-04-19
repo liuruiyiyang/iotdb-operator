@@ -1,0 +1,27 @@
+apiVersion: iotdb.apache.org/v1alpha1
+kind: IoTDB
+metadata:
+  name: iotdb
+spec:
+  # Add fields here
+  size: 3
+  # brokerImage is the customized docker image repo of the RocketMQ broker
+  image: 2019liurui/iotdb-iotdb:0.9.0-alpine
+  # imagePullPolicy is the image pull policy
+  imagePullPolicy: Always
+  # storageMode can be EmptyDir, HostPath, NFS
+  storageMode: EmptyDir
+  # hostPath is the local path to store data
+  hostPath: /data/iotdb/server
+  # volumeClaimTemplates defines the storageClass
+  volumeClaimTemplates:
+    - metadata:
+        name: iotdb-storage
+        annotations:
+          volume.beta.kubernetes.io/storage-class: iotdb-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 8Gi
+

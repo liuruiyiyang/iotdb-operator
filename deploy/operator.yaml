@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iotdb-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: iotdb-operator
+  template:
+    metadata:
+      labels:
+        name: iotdb-operator
+    spec:
+      serviceAccountName: iotdb-operator
+      containers:
+        - name: iotdb-operator
+          # Replace this with the built image name
+          image: 2019liurui/iotdb-operator:0.1.0
+          command:
+          - iotdb-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "iotdb-operator"
