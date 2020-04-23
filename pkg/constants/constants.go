@@ -19,44 +19,19 @@
 package constants
 
 const (
-	// IoTDBContainerName is the name of broker container
-	IoTDBContainerName = "broker"
+	// IoTDBContainerName is the name of iotdb container
+	IoTDBContainerName = "server"
 
-	// BasicCommand is basic command of exec function
-	BasicCommand = "sh"
+	IKRContainerName = "ikr"
 
-	// AdminToolDir is the RocketMQ Admin directory in operator image
-	AdminToolDir = "/home/rocketmq/rocketmq-4.5.0/bin/mqadmin"
+	// DeploymentDescriptor is the container environment variable name of broker id
+	DeploymentDescriptor = "DEPLOY_DESCRIPTOR_JSON"
 
-	// StoreConfigDir is the directory of config file
-	StoreConfigDir = "/home/rocketmq/store/config"
+	// EnvIoTDBTimeSegmentIndex is the container environment variable name of broker cluster name
+	EnvIoTDBTimeSegmentIndex = "BROKER_CLUSTER_NAME"
 
-	// TopicJsonDir is the directory of topics.json
-	TopicJsonDir = "/home/rocketmq/store/config/topics.json"
-
-	// SubscriptionGroupJsonDir is the directory of subscriptionGroup.json
-	SubscriptionGroupJsonDir = "/home/rocketmq/store/config/subscriptionGroup.json"
-
-	// UpdateIoTDBConfig is update broker config command
-	UpdateIoTDBConfig = "updateIoTDBConfig"
-
-	// ParamNameServiceAddress is the name of name server list parameter
-	ParamNameServiceAddress = "namesrvAddr"
-
-	// EnvNameServiceAddress is the container environment variable name of name server list
-	EnvNameServiceAddress = "NAMESRV_ADDR"
-
-	// EnvReplicationMode is the container environment variable name of replication mode
-	EnvReplicationMode = "REPLICATION_MODE"
-
-	// EnvIoTDBId is the container environment variable name of broker id
-	EnvIoTDBId = "BROKER_ID"
-
-	// EnvIoTDBClusterName is the container environment variable name of broker cluster name
-	EnvIoTDBClusterName = "BROKER_CLUSTER_NAME"
-
-	// EnvIoTDBName is the container environment variable name of broker name
-	EnvIoTDBName = "BROKER_NAME"
+	// EnvIoTDBSchemaSegmentIndex is the container environment variable name of broker name
+	EnvIoTDBSchemaSegmentIndex = "BROKER_NAME"
 
 	// LogMountPath is the directory of RocketMQ log files
 	LogMountPath = "/home/iotdb/iotdb-0.9.0/server/logs"
@@ -70,29 +45,21 @@ const (
 	// StoreSubPathName is the sub-path name of store dir under mounted host dir
 	StoreSubPathName = "data"
 
-	// NameServiceMainContainerPort is the main port number of name server container
-	NameServiceMainContainerPort = 9876
-
-	// NameServiceMainContainerPortName is the main port name of name server container
-	NameServiceMainContainerPortName = "main"
-
-	// JdbcPort is the VIP port number of broker container
 	JdbcPort = 6667
 
-	// JdbcPortName is the VIP port name of broker container
 	JdbcPortName = "jdbc"
 
-	// JMXPort is the main port number of broker container
 	JMXPort = 31999
 
-	// JMXPortName is the main port name of broker container
 	JMXPortName = "jmx"
 
-	// IoTDBHighAvailabilityContainerPort is the high availability port number of broker container
-	IoTDBHighAvailabilityContainerPort = 10912
+	IkrPort = 6666
 
-	// IoTDBHighAvailabilityContainerPortName is the high availability port name of broker container
-	IoTDBHighAvailabilityContainerPortName = "ha"
+	IkrPortName = "ikr"
+
+	IkrJmxPort = 31998
+
+	IkrJmxPortName = "ikr_jmx"
 
 	// StorageModeNFS is the name of NFS storage mode
 	StorageModeNFS = "NFS"
@@ -103,33 +70,6 @@ const (
 	// StorageModeHostPath is the name pf HostPath storage mode
 	StorageModeHostPath = "HostPath"
 
-	// RestartIoTDBPodIntervalInSecond is restart broker pod interval in second
-	RestartIoTDBPodIntervalInSecond = 30
-
-	// MinMetadataJsonFileSize is the threshold value if file length is lower than this will be considered as invalid
-	MinMetadataJsonFileSize = 5
-
-	// MinIpListLength is the threshold value if the name server list parameter length is shorter than this will be considered as invalid
-	MinIpListLength = 8
-
-	// CheckConsumeFinishIntervalInSecond is the interval of checking whether the consumption process is finished in second
-	CheckConsumeFinishIntervalInSecond = 5
-
 	// RequeueIntervalInSecond is an universal interval of the reconcile function
 	RequeueIntervalInSecond = 6
-
-	// Topic is the topic field index of the output when using command check consume progress
-	Topic = 0
-
-	// IoTDBName is the broker name field index of the output when using command check consume progress
-	IoTDBName = 1
-
-	// Diff is the diff field index of the output when using command check consume progress
-	Diff = 6
-
-	// TopicListTopic is the topic field index of the output when using command check topic list
-	TopicListTopic = 1
-
-	// TopicListConsumerGroup is the consumer group field index of the output when using command check topic list
-	TopicListConsumerGroup = 2
 )

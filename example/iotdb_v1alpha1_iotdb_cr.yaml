@@ -4,9 +4,15 @@ metadata:
   name: iotdb
 spec:
   # Add fields here
-  size: 3
-  # brokerImage is the customized docker image repo of the RocketMQ broker
-  image: 2019liurui/iotdb-iotdb:0.9.0-alpine
+  sharding:
+    - scaleTime: "2018-9-20T00:00:00+08:00"
+      schemaSegmentNum: 2
+    - scaleTime: "2014-5-14T00:53:28+08:00"
+      schemaSegmentNum: 3
+  # iotdbImage is the customized docker image repo of IoTDB
+  iotdbImage: 2019liurui/iotdb-iotdb:0.9.0-alpine
+  # replicaNum is the size of replica
+  replicaNum: 0
   # imagePullPolicy is the image pull policy
   imagePullPolicy: Always
   # storageMode can be EmptyDir, HostPath, NFS
@@ -24,4 +30,5 @@ spec:
         resources:
           requests:
             storage: 8Gi
-
+  ikrImage: 2019liurui/iotdb-ikr:0.9.0-alpine
+  ikrSize: 2

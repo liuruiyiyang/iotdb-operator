@@ -32,16 +32,38 @@ spec:
             hostPath:
               description: HostPath is the local path to store data
               type: string
-            image:
-              description: Image is the image to use for the Pods.
+            ikrImage:
+              description: IkrImage is the image to use for the IKR Pods.
               type: string
+            ikrSize:
+              description: IkrSize is the size of the IKR instance
+              format: int64
+              type: integer
             imagePullPolicy:
               description: ImagePullPolicy defines how the image is pulled.
               type: string
-            size:
-              description: Size is the size of the IoTDB Statefulset
+            iotdbImage:
+              description: IotdbImage is the image to use for the IoTDB Pods.
+              type: string
+            replicaNum:
+              description: Replica number of each read and write instance
               format: int64
               type: integer
+            sharding:
+              items:
+                properties:
+                  scaleTime:
+                    description: Time string of time segment start time
+                    type: string
+                  schemaSegmentNum:
+                    description: The schema segment instance number in this time segment
+                    format: int64
+                    type: integer
+                required:
+                - scaleTime
+                - schemaSegmentNum
+                type: object
+              type: array
             storageMode:
               description: StorageMode can be EmptyDir, HostPath, NFS
               type: string
@@ -51,12 +73,15 @@ spec:
                 type: object
               type: array
           required:
-          - size
-          - image
+          - sharding
           - imagePullPolicy
+          - iotdbImage
           - storageMode
           - hostPath
           - volumeClaimTemplates
+          - replicaNum
+          - ikrImage
+          - ikrSize
           type: object
         status:
           properties:
@@ -65,8 +90,12 @@ spec:
               items:
                 type: string
               type: array
+            timeSegmentNum:
+              format: int64
+              type: integer
           required:
           - nodes
+          - timeSegmentNum
           type: object
   version: v1alpha1
   versions:
