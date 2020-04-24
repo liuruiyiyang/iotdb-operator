@@ -15,7 +15,7 @@ type IoTDBSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
-
+	// Sharding defines how the instances are distributed by time and schema
 	Sharding []TimeSegment `json:"sharding"`
 	// ImagePullPolicy defines how the image is pulled.
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy"`
@@ -32,7 +32,7 @@ type IoTDBSpec struct {
 	// IkrImage is the image to use for the IKR Pods.
 	IkrImage string `json:"ikrImage"`
 	// IkrSize is the size of the IKR instance
-	IkrSize int `json:"ikrSize"`
+	IkrSize int32 `json:"ikrSize"`
 
 }
 

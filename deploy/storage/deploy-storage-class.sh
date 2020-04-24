@@ -15,15 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kubectl create -f deploy/crds/iotdb_v1alpha1_iotdb_crd.yaml
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-kubectl create -f deploy/operator.yaml
-
-echo "Wait for operator being ready..."
-sleep 2
-
-kubectl create -f example/iotdb_v1alpha1_iotdb_cr.yaml
-kubectl apply -f example/service_ikr.yaml
-
+kubectl apply -f nfs-client-sa.yaml
+kubectl apply -f nfs-client-class.yaml 
+kubectl apply -f nfs-client.yaml  

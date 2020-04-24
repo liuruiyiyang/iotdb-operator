@@ -102,14 +102,16 @@ func labelsForIoTDB(name string) map[string]string {
 	return map[string]string{"app": "iotdb", "iotdb_cr": name}
 }
 
+func labelsForIkr(name string) map[string]string {
+	return map[string]string{"app": "ikr", "ikr_cr": name}
+}
+
 var cmd = []string{"/bin/bash", "-c", "echo Initial iotdb server"}
 
-func (r *ReconcileIoTDB) getIKRStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, index int, deployDescriptor string) *appsv1.StatefulSet {
-	ls := labelsForIoTDB(iotdbCluster.Name)
-	var a int32 = 1
-	var c = &a
+func (r *ReconcileIoTDB) getIKRStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, deployDescriptor string) *appsv1.StatefulSet {
 	var statefulSetName string
-	statefulSetName = iotdbCluster.Name + "-ikr-" + strconv.Itoa(index)
+	statefulSetName = iotdbCluster.Name + "-ikr"
+	ls := labelsForIkr(statefulSetName)
 
 	dep := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -117,7 +119,7 @@ func (r *ReconcileIoTDB) getIKRStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, in
 			Namespace: iotdbCluster.Namespace,
 		},
 		Spec: appsv1.StatefulSetSpec{
-			Replicas: c,
+			Replicas: &iotdbCluster.Spec.IkrSize,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: ls,
 			},
@@ -157,7 +159,7 @@ func (r *ReconcileIoTDB) getIKRStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, in
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/home/ikr/ikr-0.9.0/logs",
 							Name:      iotdbCluster.Spec.VolumeClaimTemplates[0].Name,
-							SubPath:   cons.LogSubPathName + "-" + strconv.Itoa(index),
+							SubPath:   cons.LogSubPathName + "-ikr",
 						}},
 					}},
 					Volumes: getVolumes(iotdbCluster),
@@ -397,21 +399,21 @@ func (r *ReconcileIoTDB) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 		reqLogger.Info("Generated deploymentDescriptorJson: " + string(deploymentDescriptorJson))
 
-		for ikrIndex := 0; ikrIndex < iotdbCluster.Spec.IkrSize; ikrIndex++ {
-			reqLogger.Info("Check IKR " + strconv.Itoa(ikrIndex+1) + "/" + strconv.Itoa(iotdbCluster.Spec.IkrSize))
-			stateful := r.getIKRStatefulSet(iotdbCluster, ikrIndex, string(deploymentDescriptorJson))
-			// Check if the statefulSet already exists, if not create a new one
-			found := &appsv1.StatefulSet{}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: stateful.Name, Namespace: stateful.Namespace}, found)
-			if err != nil && errors.IsNotFound(err) {
-				reqLogger.Info("Creating a new IKR StatefulSet.", "StatefulSet.Namespace", stateful.Namespace, "StatefulSet.Name", stateful.Name)
-				err = r.client.Create(context.TODO(), stateful)
-				if err != nil {
-					reqLogger.Error(err, "Failed to create new IKR StatefulSet", "StatefulSet.Namespace", stateful.Namespace, "StatefulSet.Name", stateful.Name)
-				}
-			} else if err != nil {
-				reqLogger.Error(err, "Failed to get StatefulSet.")
+		found := &appsv1.StatefulSet{}
+
+		dep := r.getIKRStatefulSet(iotdbCluster, string(deploymentDescriptorJson))
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+			err = r.client.Create(context.TODO(), dep)
+			reqLogger.Info("Created a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+			if err != nil {
+				reqLogger.Error(err, "Failed to create StatefulSet of IKR", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
 			}
+			// StatefulSet created successfully - return and requeue
+			return reconcile.Result{Requeue: true}, nil
+		} else if err != nil {
+			reqLogger.Error(err, "Failed to get IKR StatefulSet.")
 		}
 
 	}

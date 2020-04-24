@@ -16,6 +16,7 @@
 # limitations under the License.
 
 echo "Stopping IoTDB-Operator..."
+kubectl delete -f example/service_ikr.yaml
 kubectl delete -f example/iotdb_v1alpha1_iotdb_cr.yaml
 
 kubectl delete -f deploy/operator.yaml

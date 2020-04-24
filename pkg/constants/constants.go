@@ -33,10 +33,10 @@ const (
 	// EnvIoTDBSchemaSegmentIndex is the container environment variable name of broker name
 	EnvIoTDBSchemaSegmentIndex = "BROKER_NAME"
 
-	// LogMountPath is the directory of RocketMQ log files
+	// LogMountPath is the directory of IoTDB log files
 	LogMountPath = "/home/iotdb/iotdb-0.9.0/server/logs"
 
-	// StoreMountPath is the directory of RocketMQ store files
+	// StoreMountPath is the directory of IoTDB store files
 	StoreMountPath = "/home/iotdb/iotdb-0.9.0/server/data"
 
 	// LogSubPathName is the sub-path name of log dir under mounted host dir
@@ -59,7 +59,8 @@ const (
 
 	IkrJmxPort = 31998
 
-	IkrJmxPortName = "ikr_jmx"
+	// must contain only alpha-numeric characters (a-z, 0-9), and hyphens (-)
+	IkrJmxPortName = "ikr-jmx"
 
 	// StorageModeNFS is the name of NFS storage mode
 	StorageModeNFS = "NFS"

@@ -37,7 +37,7 @@ spec:
               type: string
             ikrSize:
               description: IkrSize is the size of the IKR instance
-              format: int64
+              format: int32
               type: integer
             imagePullPolicy:
               description: ImagePullPolicy defines how the image is pulled.
