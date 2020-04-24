@@ -217,7 +217,7 @@ iotdb-ikr-1                       1/1     Running   0          22s     10.1.0.18
 iotdb-operator-5c57b6667c-mfxkh   1/1     Running   0          2m14s   10.1.0.178   docker-desktop   <none>           <none>
 ```
 
-We can see that there are 5 IoTDB server pods and their IP addresses within the Kubernetes cluster.
+We can see that there are 5 IoTDB server pods and 2 IKR pods as we expected and defined in the example CRD file ```iotdb_v1alpha1_iotdb_cr.yaml```.
 
 We can use the port provided by k8s service to access IoTDB and IKR outside the cluster network:
 ```
