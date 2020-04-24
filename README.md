@@ -49,7 +49,7 @@ $ ./install-operator.sh
 ```
 $ kubectl get pods
 NAME                                      READY   STATUS    RESTARTS   AGE
-iotdb-operator-564b5d75d-jllzk         1/1     Running   0          108s
+iotdb-operator-564b5d75d-jllzk            1/1     Running   0          108s
 ```
 
 Now you can use the CRDs provide by IoTDB Operator to deploy your IoTDB cluster.
@@ -145,7 +145,7 @@ $ ./deploy-storage-class.sh
 $ kubectl get pods
 NAME                                      READY   STATUS    RESTARTS   AGE
 nfs-client-provisioner-7cf858f754-7vxmm   1/1     Running   0          136m
-iotdb-operator-564b5d75d-jllzk         1/1     Running   0          108s
+iotdb-operator-564b5d75d-jllzk            1/1     Running   0          108s
 ```
 
 ### Define Your IoTDB Cluster
