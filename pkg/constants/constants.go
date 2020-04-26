@@ -24,14 +24,14 @@ const (
 
 	IKRContainerName = "ikr"
 
-	// DeploymentDescriptor is the container environment variable name of broker id
+	// DeploymentDescriptor is related to customized start scripts
 	DeploymentDescriptor = "DEPLOY_DESCRIPTOR_JSON"
 
-	// EnvIoTDBTimeSegmentIndex is the container environment variable name of broker cluster name
-	EnvIoTDBTimeSegmentIndex = "BROKER_CLUSTER_NAME"
+	// EnvIoTDBSyncReceiverAddress is related to customized start scripts
+	EnvIoTDBSyncReceiverAddress = "SYNC_RECEIVER_ADDRESS"
 
-	// EnvIoTDBSchemaSegmentIndex is the container environment variable name of broker name
-	EnvIoTDBSchemaSegmentIndex = "BROKER_NAME"
+	// EnvIoTDBIsMaster is related to customized start scripts
+	EnvIoTDBIsMaster = "IS_MASTER"
 
 	// LogMountPath is the directory of IoTDB log files
 	LogMountPath = "/home/iotdb/iotdb-0.9.0/server/logs"
@@ -59,6 +59,10 @@ const (
 
 	IkrJmxPort = 31998
 
+	SyncPortName = "sync"
+
+	SyncPort = 5555
+	
 	// must contain only alpha-numeric characters (a-z, 0-9), and hyphens (-)
 	IkrJmxPortName = "ikr-jmx"
 

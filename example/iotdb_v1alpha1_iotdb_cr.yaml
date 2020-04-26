@@ -5,14 +5,14 @@ metadata:
 spec:
   # sharding define how the instances are distributed by time and schema
   sharding:
+    - scaleTime: "2014-5-14T00:53:28+08:00"
+      schemaSegmentNum: 2
     - scaleTime: "2018-9-20T00:00:00+08:00"
       schemaSegmentNum: 2
-    - scaleTime: "2019-5-14T00:53:28+08:00"
-      schemaSegmentNum: 3
   # iotdbImage is the customized docker image repo of IoTDB
-  iotdbImage: 2019liurui/iotdb-iotdb:0.9.0-alpine
+  iotdbImage: 2019liurui/iotdb-iotdb:0.9.0
   # replicaNum is the size of replica
-  replicaNum: 0
+  replicaNum: 1
   # imagePullPolicy is the image pull policy
   imagePullPolicy: Always
   # storageMode can be EmptyDir, HostPath, NFS

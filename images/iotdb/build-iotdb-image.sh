@@ -37,6 +37,6 @@ DOCKERHUB_REPO=2019liurui/iotdb-iotdb
 
 checkVersion $IOTDB_VERSION
 
-docker build --no-cache -t ${DOCKERHUB_REPO}:${IOTDB_VERSION}-alpine --build-arg version=${IOTDB_VERSION} .
+docker build --no-cache -t ${DOCKERHUB_REPO}:${IOTDB_VERSION} --build-arg version=${IOTDB_VERSION} .
 
-docker push ${DOCKERHUB_REPO}:${IOTDB_VERSION}-alpine
+docker push ${DOCKERHUB_REPO}:${IOTDB_VERSION}

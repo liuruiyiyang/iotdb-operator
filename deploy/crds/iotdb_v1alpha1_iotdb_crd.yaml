@@ -50,6 +50,8 @@ spec:
               format: int64
               type: integer
             sharding:
+              description: Sharding defines how the instances are distributed by time
+                and schema
               items:
                 properties:
                   scaleTime:

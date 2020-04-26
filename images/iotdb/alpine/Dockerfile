@@ -15,10 +15,9 @@
 # limitations under the License.
 #
 
-FROM centos:7
+FROM openjdk:8-alpine
 
-RUN yum install -y java-1.8.0-openjdk-devel.x86_64 unzip gettext nmap-ncat openssl, which gnupg, telnet \
- && yum clean all -y
+RUN apk add --no-cache bash gettext nmap-ncat openssl busybox-extras
 
 ARG user=iotdb
 ARG group=iotdb
@@ -28,8 +27,8 @@ ARG gid=2000
 # IoTDB is run with user `iotdb`, uid = 2000
 # If you bind mount a volume from the host or a data container,
 # ensure you use the same uid
-RUN groupadd -g ${gid} ${group} \
-    && useradd -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+RUN addgroup --gid ${gid} ${group} \
+    && adduser --uid ${uid} -G ${group} ${user} -s /bin/bash -D
 
 ARG version
 
@@ -47,13 +46,16 @@ COPY iotdb-0.9.0.zip ${IOTDB_HOME}/
 RUN unzip iotdb-0.9.0.zip; \
 	mv iotdb-0.9.0*/* . ; \
 	rmdir iotdb-0.9.0 ; \
-	rm iotdb-0.9.0.zip
+	rm iotdb-0.9.0.zip ; \
+	apk del .build-deps ; \
+    rm -rf /var/cache/apk/* ; \
+    rm -rf /tmp/*
 
 
 RUN chown -R ${uid}:${gid} ${IOTDB_HOME}
 
 # Expose iotdb ports
-EXPOSE 6667 31999 5555 8181
+EXPOSE 6667 31999
 
 ## Export Java options
 #RUN export JAVA_OPT=" -Duser.home=/opt"

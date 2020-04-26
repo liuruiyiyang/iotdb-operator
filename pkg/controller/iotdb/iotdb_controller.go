@@ -175,14 +175,19 @@ func (r *ReconcileIoTDB) getIKRStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, de
 
 }
 
-func (r *ReconcileIoTDB) getIoTDBStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, timeSegmentIndex int, schemaSegmentIndex int, replicaIndex int) *appsv1.StatefulSet {
-	ls := labelsForIoTDB(iotdbCluster.Name)
+func (r *ReconcileIoTDB) getIoTDBStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, timeSegmentIndex int, schemaSegmentIndex int, replicaIndex int, syncReceiverAddress string) *appsv1.StatefulSet {
+	var ls map[string]string
 	var a int32 = 1
 	var c = &a
 	var statefulSetName string
+	var isMaster string
 	if replicaIndex == 0 {
+		isMaster = "true"
+		ls = labelsForIoTDB(iotdbCluster.Name+"-master")
 		statefulSetName = iotdbCluster.Name + "-" + strconv.Itoa(timeSegmentIndex) + "-" + strconv.Itoa(schemaSegmentIndex) + "-master"
 	} else {
+		isMaster = "false"
+		ls = labelsForIoTDB(iotdbCluster.Name+"-replica")
 		statefulSetName = iotdbCluster.Name + "-" + strconv.Itoa(timeSegmentIndex) + "-" + strconv.Itoa(schemaSegmentIndex) + "-replica-" + strconv.Itoa(replicaIndex)
 	}
 
@@ -222,11 +227,11 @@ func (r *ReconcileIoTDB) getIoTDBStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, 
 							Name:  cons.DeploymentDescriptor,
 							Value: strconv.Itoa(replicaIndex),
 						}, {
-							Name:  cons.EnvIoTDBTimeSegmentIndex,
-							Value: iotdbCluster.Name + "-" + strconv.Itoa(timeSegmentIndex),
+							Name:  cons.EnvIoTDBSyncReceiverAddress,
+							Value: syncReceiverAddress,
 						}, {
-							Name:  cons.EnvIoTDBSchemaSegmentIndex,
-							Value: iotdbCluster.Name + "-" + strconv.Itoa(schemaSegmentIndex),
+							Name:  cons.EnvIoTDBIsMaster,
+							Value: isMaster,
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: cons.JdbcPort,
@@ -234,6 +239,9 @@ func (r *ReconcileIoTDB) getIoTDBStatefulSet(iotdbCluster *iotdbv1alpha1.IoTDB, 
 						}, {
 							ContainerPort: cons.JMXPort,
 							Name:          cons.JMXPortName,
+						}, {
+							ContainerPort: cons.SyncPort,
+							Name:          cons.SyncPortName,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: cons.LogMountPath,
@@ -330,36 +338,38 @@ func (r *ReconcileIoTDB) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	iotdbCluster.Status.TimeSegmentNum = len(iotdbCluster.Spec.Sharding)
 
+	// create replica istances
 	for timeSegmentIndex := 0; timeSegmentIndex < iotdbCluster.Status.TimeSegmentNum; timeSegmentIndex++ {
 		thisSegmentNum := iotdbCluster.Spec.Sharding[timeSegmentIndex].SchemaSegmentNum
 		for segmentIndex := 0; segmentIndex < thisSegmentNum; segmentIndex++ {
-			reqLogger.Info("Check IoTDB time-schema segment " + strconv.Itoa(timeSegmentIndex+1) + "-" + strconv.Itoa(segmentIndex+1) + "/" + strconv.Itoa(iotdbCluster.Status.TimeSegmentNum) + "-" + strconv.Itoa(thisSegmentNum))
-			dep := r.getIoTDBStatefulSet(iotdbCluster, timeSegmentIndex, segmentIndex, 0)
-			// Check if the statefulSet already exists, if not create a new one
-			found := &appsv1.StatefulSet{}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-			if err != nil && errors.IsNotFound(err) {
-				reqLogger.Info("Creating a new Master IoTDB StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
-				err = r.client.Create(context.TODO(), dep)
-				if err != nil {
-					reqLogger.Error(err, "Failed to create new StatefulSet", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+			for replicaIndex := 1; replicaIndex <= iotdbCluster.Spec.ReplicaNum; replicaIndex++ {
+				reqLogger.Info("Check Replica IoTDB instance", "timeSegmentIndex", strconv.Itoa(timeSegmentIndex+1), "schemaSegmentIndex", strconv.Itoa(segmentIndex+1), "replicaIndex", replicaIndex)
+				dep := r.getIoTDBStatefulSet(iotdbCluster, timeSegmentIndex, segmentIndex, replicaIndex, "")
+				// Check if the statefulSet already exists, if not create a new one
+				found := &appsv1.StatefulSet{}
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+				if err != nil && errors.IsNotFound(err) {
+					reqLogger.Info("Creating a new Replica IoTDB StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+					err = r.client.Create(context.TODO(), dep)
+					if err != nil {
+						reqLogger.Error(err, "Failed to create new StatefulSet", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+					}
+				} else if err != nil {
+					reqLogger.Error(err, "Failed to get StatefulSet.")
 				}
-			} else if err != nil {
-				reqLogger.Error(err, "Failed to get StatefulSet.")
 			}
-
-			//TODO add replica instance
 		}
 	}
 
 	// generate deploymentDescriptor for IKR
-	podList := &corev1.PodList{}
-	labelSelector := labels.SelectorFromSet(labelsForIoTDB(iotdbCluster.Name))
+	replicaPodList := &corev1.PodList{}
+	labelSelector := labels.SelectorFromSet(labelsForIoTDB(iotdbCluster.Name+"-replica"))
 	listOps := &client.ListOptions{
 		Namespace:     iotdbCluster.Namespace,
 		LabelSelector: labelSelector,
 	}
-	err = r.client.List(context.TODO(), listOps, podList)
+
+	err = r.client.List(context.TODO(), listOps, replicaPodList)
 	if err != nil {
 		reqLogger.Error(err, "Failed to list pods.", "IoTDB.Namespace", iotdbCluster.Namespace, "IoTDB.Name", iotdbCluster.Name)
 		return reconcile.Result{Requeue: true}, err
@@ -367,7 +377,7 @@ func (r *ReconcileIoTDB) Reconcile(request reconcile.Request) (reconcile.Result,
 
 
 	notReady := false
-	for _, pod := range podList.Items {
+	for _, pod := range replicaPodList.Items {
 		if !reflect.DeepEqual(pod.Status.Phase, corev1.PodRunning) {
 			log.Info("pod " + pod.Name + " phase is " + string(pod.Status.Phase) + ", wait for a moment...")
 			notReady = true
@@ -378,44 +388,110 @@ func (r *ReconcileIoTDB) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 
 	if !isInitializing {
-		deploymentDescriptor := make([]TimeSegmentDescriptor, iotdbCluster.Status.TimeSegmentNum)
-		hostIps := getIoTDBHostIps(podList.Items)
-		instanceIndex := 0
+		replicaHostIps := getIoTDBHostIps(replicaPodList.Items)
+		// deploy master instances
+		readOnlyIndex := 0
 		for timeSegmentIndex := 0; timeSegmentIndex < iotdbCluster.Status.TimeSegmentNum; timeSegmentIndex++ {
-			deploymentDescriptor[timeSegmentIndex].ScaleTime = iotdbCluster.Spec.Sharding[timeSegmentIndex].ScaleTime
 			thisSegmentNum := iotdbCluster.Spec.Sharding[timeSegmentIndex].SchemaSegmentNum
-			schemaSegments := make([]SchemaSegmentDescriptor, thisSegmentNum)
 			for segmentIndex := 0; segmentIndex < thisSegmentNum; segmentIndex++ {
-				schemaSegments[segmentIndex].ReadOnly = make([]string, 0)
-				schemaSegments[segmentIndex].WriteRead = hostIps[instanceIndex] + ":6667"
-				instanceIndex++
+				var currentSyncReceiverAddress string
+				for i := 0;i<iotdbCluster.Spec.ReplicaNum; i++{
+					currentSyncReceiverAddress = currentSyncReceiverAddress + replicaHostIps[readOnlyIndex+i] + " "
+				}
+				reqLogger.Info("Check IoTDB RW time-schema segment " + strconv.Itoa(timeSegmentIndex+1) + "-" + strconv.Itoa(segmentIndex+1) + "/" + strconv.Itoa(iotdbCluster.Status.TimeSegmentNum) + "-" + strconv.Itoa(thisSegmentNum))
+				dep := r.getIoTDBStatefulSet(iotdbCluster, timeSegmentIndex, segmentIndex, 0, currentSyncReceiverAddress)
+				// Check if the statefulSet already exists, if not create a new one
+				found := &appsv1.StatefulSet{}
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+				if err != nil && errors.IsNotFound(err) {
+					reqLogger.Info("Creating a new Master IoTDB StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+					err = r.client.Create(context.TODO(), dep)
+					if err != nil {
+						reqLogger.Error(err, "Failed to create new StatefulSet", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+					}
+				} else if err != nil {
+					reqLogger.Error(err, "Failed to get StatefulSet.")
+				}
+				readOnlyIndex += iotdbCluster.Spec.ReplicaNum
 			}
-			deploymentDescriptor[timeSegmentIndex].SchemaSegments = schemaSegments
 		}
-		deploymentDescriptorJson, err := json.Marshal(deploymentDescriptor)
+
+
+		masterPodList := &corev1.PodList{}
+		labelSelector := labels.SelectorFromSet(labelsForIoTDB(iotdbCluster.Name+"-master"))
+		listOps := &client.ListOptions{
+			Namespace:     iotdbCluster.Namespace,
+			LabelSelector: labelSelector,
+		}
+
+		err = r.client.List(context.TODO(), listOps, masterPodList)
 		if err != nil {
-			reqLogger.Error(err, "Failed to generate deployment descriptor JSON", "IoTDB.Namespace", iotdbCluster.Namespace, "IoTDB.Name", iotdbCluster.Name)
+			reqLogger.Error(err, "Failed to list pods.", "IoTDB.Namespace", iotdbCluster.Namespace, "IoTDB.Name", iotdbCluster.Name)
 			return reconcile.Result{Requeue: true}, err
 		}
-		reqLogger.Info("Generated deploymentDescriptorJson: " + string(deploymentDescriptorJson))
 
-		found := &appsv1.StatefulSet{}
 
-		dep := r.getIKRStatefulSet(iotdbCluster, string(deploymentDescriptorJson))
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
-			err = r.client.Create(context.TODO(), dep)
-			reqLogger.Info("Created a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
-			if err != nil {
-				reqLogger.Error(err, "Failed to create StatefulSet of IKR", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+		notReady := false
+		isMasterInitializing := true
+		for _, pod := range masterPodList.Items {
+			if !reflect.DeepEqual(pod.Status.Phase, corev1.PodRunning) {
+				log.Info("pod " + pod.Name + " phase is " + string(pod.Status.Phase) + ", wait for a moment...")
+				notReady = true
 			}
-			// StatefulSet created successfully - return and requeue
-			return reconcile.Result{Requeue: true}, nil
-		} else if err != nil {
-			reqLogger.Error(err, "Failed to get IKR StatefulSet.")
+		}
+		if !notReady {
+			isMasterInitializing = false
 		}
 
+		if !isMasterInitializing {
+			masterHostIps := getIoTDBHostIps(masterPodList.Items)
+			deploymentDescriptor := make([]TimeSegmentDescriptor, iotdbCluster.Status.TimeSegmentNum)
+			writeReadInstanceIndex := 0
+			readOnlyInstanceIndex := 0
+			for timeSegmentIndex := 0; timeSegmentIndex < iotdbCluster.Status.TimeSegmentNum; timeSegmentIndex++ {
+				deploymentDescriptor[timeSegmentIndex].ScaleTime = iotdbCluster.Spec.Sharding[timeSegmentIndex].ScaleTime
+				thisSegmentNum := iotdbCluster.Spec.Sharding[timeSegmentIndex].SchemaSegmentNum
+				schemaSegments := make([]SchemaSegmentDescriptor, thisSegmentNum)
+				for segmentIndex := 0; segmentIndex < thisSegmentNum; segmentIndex++ {
+					var readOnlyList []string
+					if iotdbCluster.Spec.ReplicaNum == 0 {
+						readOnlyList = make([]string, 0)
+					} else {
+						for i:=0;i<iotdbCluster.Spec.ReplicaNum;i++{
+							readOnlyList = append(readOnlyList, replicaHostIps[readOnlyInstanceIndex + i] + ":6667")
+						}
+					}
+					schemaSegments[segmentIndex].ReadOnly = readOnlyList
+					schemaSegments[segmentIndex].WriteRead = masterHostIps[writeReadInstanceIndex] + ":6667"
+					writeReadInstanceIndex++
+					readOnlyInstanceIndex += iotdbCluster.Spec.ReplicaNum
+				}
+				deploymentDescriptor[timeSegmentIndex].SchemaSegments = schemaSegments
+			}
+			deploymentDescriptorJson, err := json.Marshal(deploymentDescriptor)
+			if err != nil {
+				reqLogger.Error(err, "Failed to generate deployment descriptor JSON", "IoTDB.Namespace", iotdbCluster.Namespace, "IoTDB.Name", iotdbCluster.Name)
+				return reconcile.Result{Requeue: true}, err
+			}
+			reqLogger.Info("Generated deploymentDescriptorJson: " + string(deploymentDescriptorJson))
+
+			found := &appsv1.StatefulSet{}
+
+			dep := r.getIKRStatefulSet(iotdbCluster, string(deploymentDescriptorJson))
+			err = r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+			if err != nil && errors.IsNotFound(err) {
+				reqLogger.Info("Creating a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+				err = r.client.Create(context.TODO(), dep)
+				reqLogger.Info("Created a new IKR StatefulSet.", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+				if err != nil {
+					reqLogger.Error(err, "Failed to create StatefulSet of IKR", "StatefulSet.Namespace", dep.Namespace, "StatefulSet.Name", dep.Name)
+				}
+				// StatefulSet created successfully - return and requeue
+				return reconcile.Result{Requeue: true}, nil
+			} else if err != nil {
+				reqLogger.Error(err, "Failed to get IKR StatefulSet.")
+			}
+		}
 	}
 
 	return reconcile.Result{Requeue: true, RequeueAfter: time.Duration(cons.RequeueIntervalInSecond) * time.Second}, nil

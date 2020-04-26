@@ -15,9 +15,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function start_sync() {
+  echo "SYNC_RECEIVER_ADDRESS=$SYNC_RECEIVER_ADDRESS" >> ./SYNC_RECEIVER_ADDRESS.txt
+  SYNC_PERIOD_PARAMETER="sync_period_in_second"
+  CUSTOMIZED_SYNC_PERIOD="30"
+  sed -i "s/^${SYNC_PERIOD_PARAMETER}.*$/${SYNC_PERIOD_PARAMETER}=${CUSTOMIZED_SYNC_PERIOD}/g" $SYNC_CLINET_CONFIG_FILE
+  for LINE in $SYNC_RECEIVER_ADDRESS;
+  do
+    CHANGE_PARAMETER="server_ip"
+    if [ -n "$LINE" ]; then
+      if [ "$LINE" != "" ]; then
+          sed -i "s/^${CHANGE_PARAMETER}.*$/${CHANGE_PARAMETER}=${LINE}/g" $SYNC_CLINET_CONFIG_FILE
+          bash $IOTDB_HOME/tools/start-sync-client.sh > /dev/null 2>&1 &
+          sleep 1
+          cat $SYNC_CLINET_CONFIG_FILE >> ./SYNC_RECEIVER_ADDRESS.txt
+      fi
+    fi
+  done
+}
+
 echo "Applying customized configurations..."
-#BROKER_CONFIG_FILE="$IOTDB_HOME/conf/config.conf"
-#echo $BROKER_CONFIG_FILE
+SYNC_CLINET_CONFIG_FILE="$IOTDB_HOME/conf/iotdb-sync-client.properties"
+echo $SYNC_CLINET_CONFIG_FILE
+
+if [ $IS_MASTER = "true" ];then
+  start_sync
+fi
+
+
+
 #
 #BROKER_ROLE="SLAVE"
 #

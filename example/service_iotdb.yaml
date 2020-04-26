@@ -6,7 +6,7 @@ metadata:
 spec:
   selector:
     app: iotdb
-    ikr_cr: iotdb
+    ikr_cr: iotdb-master
   type: NodePort
   ports:
     - port: 6667
